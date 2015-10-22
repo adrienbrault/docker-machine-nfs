@@ -138,6 +138,8 @@ configureNFS()
     (
         echo '\n"/Users" '$prop_machine_ip' -alldirs -mapall='$(id -u)':'$(id -g)'\n' | sudo tee -a /etc/exports && \
         awk '!a[$0]++' /etc/exports | sudo tee /etc/exports
+        echo '\n"/Volumes/Developer" '$prop_machine_ip' -alldirs -mapall='$(id -u)':'$(id -g)'\n' | sudo tee -a /etc/exports && \
+        awk '!a[$0]++' /etc/exports | sudo tee /etc/exports
         
     ) > /dev/null
     
@@ -159,8 +161,10 @@ configureBoot2Docker()
     
     local bootlocalsh='#!/bin/sh
     sudo umount /Users
+    sudo umount /Volumes/Developer
     sudo /usr/local/etc/init.d/nfs-client start
-    sudo mount -t nfs -o noacl,async '$prop_machine_vboxnet_ip':/Users /Users'
+    sudo mount -t nfs -o noacl,async '$prop_machine_vboxnet_ip':/Users /Users
+    sudo mount -t nfs -o noacl,async '$prop_machine_vboxnet_ip':/Volumes/Developer /Volumes/Developer'
 
     docker-machine ssh $prop_machine_name "echo '$bootlocalsh' | sudo tee /var/lib/boot2docker/bootlocal.sh && sudo chmod +x /var/lib/boot2docker/bootlocal.sh" > /dev/null
     
@@ -183,6 +187,8 @@ restartDockerMachine()
 isNFSMounted()
 {
     local nfs_mount=$(docker-machine ssh $prop_machine_name "df || true" | grep "$prop_machine_vboxnet_ip:/Users")
+    if [ "" = "$nfs_mount" ]; then echo "false"; fi
+    local nfs_mount=$(docker-machine ssh $prop_machine_name "df || true" | grep "$prop_machine_vboxnet_ip:/Volumes/Developer")
     if [ "" = "$nfs_mount" ]; then echo "false"; else echo "true"; fi
 }
 
